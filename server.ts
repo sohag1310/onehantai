@@ -8,13 +8,13 @@ import * as cheerio from "cheerio";
 import { createServer as createViteServer } from "vite";
 import {
   SITE,
-  ANIME_HEADERS,
+  HENTAI_HEADERS,
   cleanSlug,
   buildWatchUrl,
   upscalePosterUrl,
   extractServersFromHtml,
 } from "./server/scraper-utils.ts";
-import { ANIME_CATALOG, AnimeCatalogItem } from "./server/catalog-data.ts";
+import { HENTAI_CATALOG, HentaiCatalogItem } from "./server/catalog-data.ts";
 
 dotenv.config();
 
@@ -40,7 +40,7 @@ const verifiedCache = new Map<string, VerifiedCacheEntry>();
 const VERIFY_TTL = 30 * 60 * 1000;
 
 /**
- * Verifies video availability for a given anime slug
+ * Verifies video availability for a given hentai slug
  */
 export const verifyAvailability = async (
   slug: string
@@ -52,7 +52,7 @@ export const verifyAvailability = async (
   }
 
   // Check known catalog first
-  const inCatalog = ANIME_CATALOG.find((a) => cleanSlug(a.slug) === normSlug);
+  const inCatalog = HENTAI_CATALOG.find((a) => cleanSlug(a.slug) === normSlug);
   if (inCatalog) {
     const res: VerifiedCacheEntry = {
       hasVideo: true,
@@ -69,7 +69,7 @@ export const verifyAvailability = async (
   const firstEp = buildWatchUrl({ slug: normSlug, season: 1, ep: 1 });
   try {
     const { status, data } = await axios.get(firstEp, {
-      headers: ANIME_HEADERS,
+      headers: HENTAI_HEADERS,
       timeout: 5000,
       validateStatus: (s) => s < 500,
     });
@@ -107,7 +107,7 @@ export const verifyAvailability = async (
 /**
  * Health check
  */
-app.get("/api/health", (_req: Request, res: Response) => {
+app.get("/api/hanime.tv/", (_req: Request, res: Response) => {
   res.json({
     status: "ok",
     timestamp: new Date().toISOString(),
@@ -119,9 +119,9 @@ app.get("/api/health", (_req: Request, res: Response) => {
 /**
  * Categories & Genres endpoint
  */
-app.get("/api/hanime.tv/categories", (_req: Request, res: Response) => {
+app.get("/api/hanime.tv/", (_req: Request, res: Response) => {
   const categories = [
-    { id: "all", name: "All Anime", count: 180 },
+    { id: "all", name: "All Hentai", count: 180 },
     { id: "trending", name: "Trending Now", count: 42 },
     { id: "action", name: "Action", count: 85 },
     { id: "fantasy", name: "Fantasy", count: 64 },
@@ -149,13 +149,13 @@ app.get("/api/hanime.tv/feed", async (req: Request, res: Response) => {
       ? `${SITE}/category/${encodeURIComponent(category)}?page=${page}`
       : `${SITE}/?page=${page}`;
 
-    const rawAnimes: any[] = [];
+    const rawHentai: any[] = [];
     const seen = new Set<string>();
 
     // Try remote fetch
     try {
       const response = await axios.get(fetchUrl, {
-        headers: ANIME_HEADERS,
+        headers: HENTAI_HEADERS,
         timeout: 6000,
         validateStatus: (s) => s < 500,
       });
@@ -163,10 +163,10 @@ app.get("/api/hanime.tv/feed", async (req: Request, res: Response) => {
       if (response.status === 200 && response.data) {
         const $ = cheerio.load(response.data);
 
-        $("a[href*='/videos/hentai/'], a[href*='/videos/anime/']").each(
+        $("a[href*='/videos/hentai/'], a[href*='/videos/hentai/']").each(
           (_, a) => {
             const href = $(a).attr("href") || "";
-            const m = href.match(/\/videos\/(?:hentai|anime)\/([a-z0-9-]+)/i);
+            const m = href.match(/\/videos\/(?:hentai|hentai)\/([a-z0-9-]+)/i);
             if (!m || seen.has(m[1])) return;
             const slug = m[1];
             seen.add(slug);
@@ -183,7 +183,7 @@ app.get("/api/hanime.tv/feed", async (req: Request, res: Response) => {
               "";
             const largeImg = upscalePosterUrl(img);
 
-            rawAnimes.push({
+            rawHentai.push({
               mal_id: slug,
               slug,
               title,
@@ -194,7 +194,7 @@ app.get("/api/hanime.tv/feed", async (req: Request, res: Response) => {
               },
               score: 8.5,
               type: "TV",
-              genres: ["Action", "Anime"],
+              genres: ["Action", "Hentai"],
             });
           }
         );
@@ -204,7 +204,7 @@ app.get("/api/hanime.tv/feed", async (req: Request, res: Response) => {
     }
 
     // Merge or fallback to our rich verified anime catalog
-    let catalogItems = [...ANIME_CATALOG];
+    let catalogItems = [...HENTAI_CATALOG];
     if (search) {
       const q = search.toLowerCase();
       catalogItems = catalogItems.filter(
@@ -254,24 +254,24 @@ app.get("/api/hanime.tv/feed", async (req: Request, res: Response) => {
     });
 
     // Verify in batches of 6 to drop dead entries (Anti-Dead Links Filter)
-    const verifiedAnimes: any[] = [];
-    for (let i = 0; i < rawAnimes.length; i += 6) {
+    const verifiedHentai: any[] = [];
+    for (let i = 0; i < rawHentai.length; i += 6) {
       const results = await Promise.all(
-        rawAnimes.slice(i, i + 6).map(async (item) => {
+        rawHentais.slice(i, i + 6).map(async (item) => {
           const v = await verifyAvailability(item.slug);
           return v.hasVideo
             ? { ...item, hasVideo: true, firstEpUrl: v.firstEpUrl }
             : null;
         })
       );
-      results.forEach((item) => item && verifiedAnimes.push(item));
+      results.forEach((item) => item && verifiedHentai.push(item));
     }
 
     res.json({
       success: true,
       page,
-      total: verifiedAnimes.length,
-      animes: verifiedAnimes,
+      total: verifiedHentai.length,
+      animes: verifiedHentai,
     });
   } catch (err: any) {
     res.json({
@@ -323,7 +323,7 @@ app.get("/api/hanime.tv/series", async (req: Request, res: Response) => {
           synopsis = scrapedSynopsis;
         }
 
-        $("a[href*='/videos/hentai/'][href*='ep='], a[href*='/videos/anime/'][href*='ep=']").each(
+        $("a[href*='/videos/hentai/'][href*='ep='], a[href*='/videos/hentai/'][href*='ep=']").each(
           (_, a) => {
             const href = $(a).attr("href") || "";
             const ep = parseInt(href.match(/[?&]ep=(\d+)/)?.[1] || "0", 10);
