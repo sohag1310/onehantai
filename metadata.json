@@ -1,0 +1,6 @@
+{
+  "name": "AniStream Hub - High-Speed Anime & Movie Streaming",
+  "description": "Production-ready, high-speed anime and movie streaming platform featuring real-time multi-server playback, sub & dub switching, verified stream links, and dark cinema player.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
