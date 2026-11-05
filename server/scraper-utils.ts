@@ -21,7 +21,7 @@ export const cleanSlug = (slug: string): string => {
   return slug
     .trim()
     .toLowerCase()
-    .replace(/^series-|^movies-|^videos-|^anime-/, "")
+    .replace(/^series-|^movies-|^videos-|^hentai-/, "")
     .replace(/[^\w-]/g, "");
 };
 
@@ -42,7 +42,7 @@ export const buildWatchUrl = (p: {
     server: p.server ?? "multi-1",
     lang: p.lang ?? "hin",
   });
-  return `${SITE}/videos/anime/${slug}?${q.toString()}`;
+  return `${SITE}/videos/hentai/${slug}?${q.toString()}`;
 };
 
 /**
