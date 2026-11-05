@@ -119,7 +119,7 @@ app.get("/api/hanime.tv/", (_req: Request, res: Response) => {
 /**
  * Categories & Genres endpoint
  */
-app.get("/api/hanime.tv/", (_req: Request, res: Response) => {
+app.get("/api/health", (_req: Request, res: Response) => {
   const categories = [
     { id: "all", name: "All Hentai", count: 180 },
     { id: "trending", name: "Trending Now", count: 42 },
